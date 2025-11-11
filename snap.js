@@ -5,7 +5,6 @@ import fs from 'fs';
 const URL = process.argv[2] || 'https://example.com';
 const TARGET = process.argv[3] && process.argv[3] !== 'null' ? process.argv[3] : null;
 const Y_OFFSET = Number(process.argv[4] || 0);
-const HEADER = process.argv[5] || null;
 
 const SIZES = [
     { w: 360, h: 780 }, { w: 390, h: 844 }, { w: 414, h: 896 },
@@ -16,35 +15,24 @@ const SIZES = [
 
 if (!fs.existsSync('shots')) fs.mkdirSync('shots');
 
-async function scrollToTarget(page, { target, y, header }) {
+async function scrollPage(page, target, y) {
     await page.addStyleTag({ content: '*{scroll-behavior:auto!important}' });
-
-    const headerPx = /^\d+$/.test(String(header))
-        ? Number(header)
-        : await page.evaluate(sel => {
-            if (!sel) return 0;
-            const el = document.querySelector(sel);
-            if (!el) return 0;
-            const r = el.getBoundingClientRect();
-            return Math.ceil(r.height);
-        }, header);
 
     if (target) {
         console.log('Scrolling to element', target);
-        await page.locator(target).first().waitFor({ state: 'visible', timeout: 10000 });
-        await page.evaluate(({ sel, headerPx }) => {
+        await page.locator(target).first().waitFor({ state: 'visible', timeout: 15000 });
+        await page.evaluate(sel => {
             const el = document.querySelector(sel);
-            if (!el) return;
-            const rect = el.getBoundingClientRect();
-            const absoluteTop = rect.top + window.scrollY;
-            window.scrollTo({ top: absoluteTop - headerPx - 8, behavior: 'instant' });
-        }, { sel: target, headerPx });
+            if (el) el.scrollIntoView({ behavior: 'instant', block: 'start' });
+        }, target);
     } else {
         console.log('Scrolling to Y offset', y);
         await page.evaluate(y => window.scrollTo({ top: y, behavior: 'instant' }), y);
     }
 
-    await page.waitForTimeout(1000);
+    const pos = await page.evaluate(() => window.scrollY);
+    console.log('ScrollY after scroll =', pos);
+    await page.waitForTimeout(800);
 }
 
 (async () => {
@@ -54,14 +42,22 @@ async function scrollToTarget(page, { target, y, header }) {
         console.log(`Capturing ${w}x${h}`);
         const context = await browser.newContext({
             viewport: { width: w, height: h },
-            deviceScaleFactor: 1
+            deviceScaleFactor: 1,
+            isMobile: false,
+            hasTouch: false
         });
         const page = await context.newPage();
-        await page.goto(URL, { waitUntil: 'domcontentloaded' });
-        await scrollToTarget(page, { target: TARGET, y: Y_OFFSET, header: HEADER });
+        await page.goto(URL, { waitUntil: 'networkidle' });
+        await page.waitForLoadState('domcontentloaded');
+        await page.waitForTimeout(500);
+
+        await scrollPage(page, TARGET, Y_OFFSET);
+
+        // Capture *viewport only* at the current scroll position
         const path = `shots/shot-${w}x${h}.png`;
         await page.screenshot({ path });
         console.log(`Saved ${path}`);
+
         await context.close();
     }
     await browser.close();
