@@ -7,10 +7,38 @@ const TARGET = process.argv[3] && process.argv[3] !== 'null' ? process.argv[3] :
 const Y_OFFSET = Number(process.argv[4] || 0);
 
 const SIZES = [
-    { w: 360, h: 780 }, { w: 390, h: 844 }, { w: 414, h: 896 },
-    { w: 600, h: 960 }, { w: 768, h: 1024 }, { w: 834, h: 1112 },
-    { w: 1024, h: 768 }, { w: 1280, h: 800 }, { w: 1440, h: 900 },
-    { w: 1920, h: 1080 }
+    // Mobile (xs: 0-599px)
+    { w: 360, h: 780 },   // Small phone
+    { w: 390, h: 844 },   // iPhone standard
+    { w: 460, h: 900 },   // You said "perfectly fine" at this width
+
+    // Small tablets (sm: 600-899px) - This range had issues
+    { w: 600, h: 960 },   // Breakpoint boundary
+    { w: 690, h: 1024 },  // You reported dots in description here
+    { w: 768, h: 1024 },  // iPad portrait
+    { w: 870, h: 1024 },  // Upper end of problematic range
+
+    // Tablets/laptops (md: 900-1199px)
+    { w: 900, h: 1024 },  // Breakpoint boundary
+    { w: 1024, h: 768 },  // You said "fine" after fixes
+    { w: 1030, h: 900 },  // You said "suddenly it's fine"
+
+    // Laptops (lg: 1200-1535px)
+    { w: 1200, h: 900 },  // Breakpoint boundary
+    { w: 1280, h: 800 },  // Common laptop
+    { w: 1390, h: 900 },  // You tested - "overall fine"
+    { w: 1440, h: 900 },  // MacBook 16:10
+
+    // Large displays (xl: 1536-1919px) - Had spacing issues
+    { w: 1536, h: 960 },  // Breakpoint boundary
+    { w: 1770, h: 1080 }, // You said "dots in middle of description"
+
+    // Extra large (xxl: 1920px+)
+    { w: 1920, h: 1080 }, // Full HD
+    { w: 2200, h: 1080 }, // You tested - had issues
+
+    // Optional: Ultrawide (if using uw breakpoint)
+    { w: 2560, h: 1440 }  // 2K ultrawide
 ];
 
 if (!fs.existsSync('shots')) fs.mkdirSync('shots');
